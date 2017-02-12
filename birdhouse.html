@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset=utf-8>
+<title>3D preview</title>
+<style>
+
+body{
+	overflow:hidden;
+	margin: 0;
+	font-family:arial; 
+}
+
+input{
+	width:50px;
+}
+
+
+#parameters{
+	position:absolute
+}
+
+
+#explode{
+	width:auto;
+}
+</style>
+</head>
+
+<body onload="updateAll()" onResize="window.location=window.location;">
+
+<script src="js/libs/jquery-3.1.1.min.js"></script>
+<script src="js/libs/jquery.mousewheel.min.js"></script>
+<script src="js/libs/three.js"></script>
+<script src="js/libs/ThreeCSG.js"></script>
+<script src="js/birdhouse.js"></script>
+
+
+<div id="parameters" style="top:10px;left:10px">
+BIRDHOUSE<br>
+
+&emsp;material<br>
+&emsp;&emsp;<input id='thickness' type="number" value="0" step="0.001" autocomplete="off"/><br> 
+&emsp;width<br>
+&emsp;&emsp;<input id='width' type="number" value="0" step="0.125" autocomplete="off"/><br> 
+&emsp;depth<br>
+&emsp;&emsp;<input id='depth' type="number" value="0"  step="0.125" autocomplete="off"/><br>
+&emsp;height<br>
+&emsp;&emsp;<input id='height' type="number" value="0"  step="0.125" autocomplete="off"/><br>
+&emsp;hole &empty;<br>
+&emsp;&emsp;<input id='hole' type="number" value="0"  step="0.05" autocomplete="off"/><p>
+ 
+&emsp;&emsp;<input id='explode' type="submit" value="explode" onclick="explode()"/><br>
+ 
+
+
+</div>
+
+<script>
+
+var scene = new THREE.Scene() 
+ 
+var renderer = new THREE.WebGLRenderer() 
+renderer.setSize( window.innerWidth, window.innerHeight ) 
+document.body.appendChild( renderer.domElement )
+
+var camera = new THREE.OrthographicCamera( window.innerWidth / -2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, -1000, 5000 )
+
+camera.position.y = 500;
+camera.position.z =300;
+camera.rotation.x = -Math.PI/4
+
+renderer.setClearColor(0xffffff, 1)
+
+var extrudeSettings = {
+steps: 1,
+amount: 5,
+bevelEnabled: false,
+material: 0,
+extrudeMaterial: 1
+};
+
+
+var material1 =new THREE.MeshBasicMaterial( {
+transparent: false,
+opacity: 0.5,
+color: 0xcc9966, 
+polygonOffset: true, 
+polygonOffsetFactor: 1 
+})
+
+var material2 =new THREE.MeshBasicMaterial( {
+transparent: true,
+opacity: 0.5,
+color: 0xe6ccb3, 
+polygonOffset: true, 
+polygonOffsetFactor: 0 
+})
+
+
+var material3 =new THREE.MeshBasicMaterial( {
+transparent: true,
+opacity: 0.9,
+color: 0xd3b89e, 
+polygonOffset: true, 
+polygonOffsetFactor: 1 
+})
+
+
+var material4 =new THREE.MeshBasicMaterial( {
+transparent: true,
+opacity: 0.9,
+color: 0xe9ccb0, 
+polygonOffset: true, 
+polygonOffsetFactor: 1 
+})
+
+var materials = new THREE.MeshFaceMaterial([material4, material3]);
+
+var material5 =new THREE.MeshBasicMaterial( {
+transparent: true,
+opacity: 0.7,
+color: 0xe9ccb0, 
+polygonOffset: true, 
+polygonOffsetFactor: 1 
+})
+
+
+var material6 =new THREE.MeshBasicMaterial( {
+transparent: true,
+opacity: 0.7,
+color: 0xe9ccb0, 
+polygonOffset: true, 
+polygonOffsetFactor: 1 
+})
+
+
+var lineMaterial = new THREE.LineBasicMaterial( { 
+color: 0x000000, 
+linewidth: 1 
+} )
+
+var lineMaterial2 = new THREE.LineBasicMaterial( { 
+color: 0xdddddd, 
+linewidth: 1 
+} )
+
+
+var lineMaterial3 = new THREE.LineBasicMaterial( {
+transparent: true,
+opacity: 0.3, 
+color: 0xff0000, 
+linewidth: 1 
+} )
+
+var lineMaterial4 = new THREE.LineBasicMaterial( {
+transparent: true,
+opacity: 0.5, 
+color: 0x00ff00, 
+linewidth: 1 
+} )
+
+
+var lineMaterial5 = new THREE.LineBasicMaterial( {
+transparent: true,
+opacity: 0.4, 
+color: 0xff00ff, 
+linewidth: 1 
+} )
+
+var planeMaterial = new THREE.MeshBasicMaterial( {
+transparent: true,
+opacity: 0.3,
+color: 0xeeeeff, 
+side: THREE.DoubleSide,
+polygonOffset: true, 
+polygonOffsetFactor: 1
+});
+
+
+var r = 0
+var sf = 5
+var dir = true
+var tool = 1.25 //1/8 radius
+var chamfer = 0.5
+var chamfer2 = 2.5
+
+$("#thickness").on('change click',function(){
+	birdhouse.material = $(this).val()
+	
+	updateAll()
+})
+
+
+$("#width").on('change click',function(){
+	birdhouse.width = $(this).val()
+	
+	updateAll()
+})
+
+$("#depth").on('change click',function(){
+	birdhouse.depth = $(this).val()
+	
+	updateAll()
+})
+
+$("#height").on('change click',function(){
+	birdhouse.height = $(this).val()
+	
+	updateAll()
+})
+
+
+$("#hole").on('change click',function(){
+	birdhouse.hole = $(this).val()
+	
+	updateAll()
+})
+
+
+var explodeView = false
+
+function explode(){
+
+	explodeView=!explodeView
+	console.log(explodeView)
+}
+
+var d = 0
+
+function render() { 
+
+	requestAnimationFrame(render)
+
+
+
+	r-=0.003
+	if(Math.abs(r)>=2*Math.PI){
+		r=0
+	}
+
+	
+	if(d>100){
+		d=100
+		dir=false
+		$("#explode").val('assemble')
+	}
+	else if(d<1){
+		d=0
+		dir=true
+		$("#explode").val('explode')
+		material4.transparent=false
+		material3.transparent=false
+	}
+
+	if((dir==true)&&(explodeView==true)){
+		d+=3
+
+		ds=d*Math.sin(r+Math.PI/2)
+		dc=d*Math.cos(r+Math.PI/2)	
+
+		ds2=d*Math.sin(r)
+		dc2=d*Math.cos(r)
+		
+		topl.position.set(-ds,d,-dc)		
+		toplWF.position.set(-ds,d,-dc)
+		topr.position.set(ds,d,dc)		
+		toprWF.position.set(ds,d,dc)
+
+		leftWF.position.x=ds
+		leftWF.position.z=dc
+		left.position.x=ds
+		left.position.z=dc
+
+		frontWF.position.x=ds2
+		frontWF.position.z=dc2
+		front.position.x=ds2
+		front.position.z=dc2
+
+		cylinder.position.x=ds2*1.4
+		cylinder.position.z=dc2*1.4
+		cylinderWF.position.x=ds2*1.4
+		cylinderWF.position.z=dc2*1.4
+
+		backWF.position.x=-ds2
+		backWF.position.z=-dc2
+		back.position.x=-ds2
+		back.position.z=-dc2
+
+		rightWF.position.x=-ds
+		rightWF.position.z=-dc
+		right.position.x=-ds
+		right.position.z=-dc
+	}
+	else{
+		if(explodeView==false){
+			material4.transparent=true
+			material3.transparent=true
+			d-=3
+		}
+
+		ds=d*Math.sin(r+Math.PI/2)
+		dc=d*Math.cos(r+Math.PI/2)	
+
+		ds2=d*Math.sin(r)
+		dc2=d*Math.cos(r)
+
+		topl.position.set(-ds,d,-dc)		
+		toplWF.position.set(-ds,d,-dc)
+		topr.position.set(ds,d,dc)		
+		toprWF.position.set(ds,d,dc)
+
+		leftWF.position.x=ds
+		leftWF.position.z=dc
+		left.position.x=ds
+		left.position.z=dc
+
+		frontWF.position.x=ds2
+		frontWF.position.z=dc2
+		front.position.x=ds2
+		front.position.z=dc2
+
+		cylinder.position.x=ds2*1.4
+		cylinder.position.z=dc2*1.4
+		cylinderWF.position.x=ds2*1.4
+		cylinderWF.position.z=dc2*1.4
+
+		backWF.position.x=-ds2
+		backWF.position.z=-dc2
+		back.position.x=-ds2
+		back.position.z=-dc2
+
+		rightWF.position.x=-ds
+		rightWF.position.z=-dc
+		right.position.x=-ds
+		right.position.z=-dc
+
+	}
+	
+	for(i=0;i<scene.children.length;i++){
+		scene.children[i].rotation.y=r
+
+		if(scene.children[i].type=="Sprite"){
+			//scene.children[i].position.set((250*sf*Math.sin(r)),(10*sf),(250*sf*Math.cos(r)))
+		}
+
+	}
+
+
+
+	renderer.render(scene, camera)
+ 
+} 
+
+
+
+function rotateX(o,a){
+	o.geometry.applyMatrix(new THREE.Matrix4().makeRotationX(a))
+}
+function rotateY(o,a){
+	o.geometry.applyMatrix(new THREE.Matrix4().makeRotationY(a))
+}
+function rotateZ(o,a){
+	o.geometry.applyMatrix(new THREE.Matrix4().makeRotationZ(a))
+}
+
+function translate(o,x,y,z){
+	o.geometry.applyMatrix( new THREE.Matrix4().makeTranslation( x,y,z) )
+}
+
+
+
+
+function updateAll(){
+
+
+
+	while (scene.children.length > 0) {
+            scene.remove(scene.children[scene.children.length - 1])
+	}
+
+
+	//plane
+	geometry = new THREE.PlaneGeometry( 480, 480, 32 )
+	plane = new THREE.Mesh( geometry, planeMaterial )
+	
+	scene.add( plane )
+	plane.geometry.applyMatrix( new THREE.Matrix4().makeRotationX(Math.PI/2 ) )
+	//translate(plane,0,-3,0)
+	//outline
+	pts = new THREE.Geometry()
+
+	
+
+	//grid 48 x 48 x 1"
+	l=48/2*10
+	w=48/2*10
+
+	for(i=0;i<48;i++){
+		if(i%2==0){
+			pts.vertices.push(new THREE.Vector3(-w, -l, 0))
+			pts.vertices.push(new THREE.Vector3(-w, l, 0))
+		}
+		else{
+			pts.vertices.push(new THREE.Vector3(-w, l, 0))
+			pts.vertices.push(new THREE.Vector3(-w, -l, 0))
+		
+		}
+		w-=10
+	}
+
+	for(i=0;i<48;i++){
+		if(i%2==0){
+			pts.vertices.push(new THREE.Vector3(-w, -l, 0))
+			pts.vertices.push(new THREE.Vector3(w, -l, 0))
+		}
+		else{
+			pts.vertices.push(new THREE.Vector3(w, -l, 0))
+			pts.vertices.push(new THREE.Vector3(-w, -l, 0))
+		
+		}
+		l-=10
+	}
+
+		pts.vertices.push(new THREE.Vector3(-w, -l, 0))
+		pts.vertices.push(new THREE.Vector3(w, -l, 0))
+
+
+		pts.vertices.push(new THREE.Vector3(-w, -l, 0))
+		pts.vertices.push(new THREE.Vector3(-w, l, 0))
+
+	//console.log(pts)	
+
+	outline = new THREE.Line(pts, lineMaterial2)
+	outline.geometry.applyMatrix( new THREE.Matrix4().makeRotationX(Math.PI/2 ) )
+	translate(outline,0,-0.5,0)
+	scene.add(outline)
+
+
+	pts2 = new THREE.Geometry()
+	pts2.vertices.push(new THREE.Vector3(240,0,0))
+	pts2.vertices.push(new THREE.Vector3(-240,0,0))
+	xAxis = new THREE.Line(pts2, lineMaterial3)
+	scene.add(xAxis)
+
+
+	pts3 = new THREE.Geometry()
+	pts3.vertices.push(new THREE.Vector3(0,0,240))
+	pts3.vertices.push(new THREE.Vector3(0,0,-240))
+	yAxis = new THREE.Line(pts3, lineMaterial4)
+	scene.add(yAxis)
+
+
+	pts4 = new THREE.Geometry()
+	pts4.vertices.push(new THREE.Vector3(0,0,0))
+	pts4.vertices.push(new THREE.Vector3(0,480,0))
+	zAxis = new THREE.Line(pts4, lineMaterial5)
+	scene.add(zAxis)
+
+	//CSG
+	/*
+
+	var materialNormal = new THREE.MeshNormalMaterial();
+
+	cube1 = new THREE.BoxGeometry(100, 100, 100);
+
+	cubeMesh = new THREE.Mesh( cube1 );
+
+	geometry = new THREE.EdgesGeometry(cube1)
+	cubeWireframe = new THREE.LineSegments(geometry,lineMaterial)
+	//scene.add(cubeWireframe)
+	
+	translate(cubeMesh,50,50,-50)
+	translate(cubeWireframe,51,51,-51)
+
+	sphere1 = new THREE.BoxGeometry( 100, 100, 100 );
+
+	sphereMesh = new THREE.Mesh( sphere1 );
+
+	translate(sphereMesh,0,100,0)
+
+	geometry = new THREE.EdgesGeometry(sphere1)
+	sphereWireframe = new THREE.LineSegments(geometry,lineMaterial)
+	//scene.add(sphereWireframe)
+
+
+	var cubeBSP = new ThreeBSP( cubeMesh );
+	var sphereBSP = new ThreeBSP( sphereMesh );
+
+	var newBSP = cubeBSP.subtract( sphereBSP );
+
+	var geo = newBSP.toGeometry();
+
+	var newMesh = newBSP.toMesh( material4 );
+
+	geo2 = new THREE.EdgesGeometry(geo)
+	var newWireframe = new THREE.LineSegments(geo2,lineMaterial)
+
+	//console.log(geo)
+
+	newWireframe.position.set(0,1,0);
+	scene.add( newMesh );
+	scene.add( newWireframe );
+
+	*/
+	
+
+	console.log(birdhouse)
+
+	$("#thickness").val(birdhouse.material)
+	$("#width").val(birdhouse.width)
+	$("#depth").val(birdhouse.depth)
+	$("#height").val(birdhouse.height)
+	$("#hole").val(birdhouse.hole)
+
+	makePart(birdhouse.width,birdhouse.height,'front')
+	makePart(birdhouse.width,birdhouse.height,'back')
+	makePart(birdhouse.depth,birdhouse.height,'left')
+	makePart(birdhouse.width,birdhouse.depth,'bottom')
+	makePart(birdhouse.width,birdhouse.depth,'top')
+
+	//dims()
+
+	scale(sf)
+
+}
+
+function makePart(width,height,partName){
+
+	width*=10
+	height*=10
+	thickness=birdhouse.material*10
+
+	extrudeSettings.amount = thickness
+
+	if((partName=="front")||(partName=="back")){
+
+		shape = new THREE.Shape()
+
+		shape.moveTo(-width/2,0)
+
+		shape.lineTo(-width/2,height/3-chamfer)
+		shape.lineTo(-width/2+chamfer,height/3)
+
+		dogbone(shape,-width/2+thickness,height/3+tool,1)
+		dogbone(shape,-width/2+thickness,height/1.5-tool,1)
+		shape.lineTo(-width/2+thickness,height/1.5)
+ 
+		shape.lineTo(-width/2+chamfer,height/1.5)
+		shape.lineTo(-width/2,height/1.5+chamfer)
+
+		shape.lineTo(-width/2,height)
+		dogbone(shape,(-width/2/1.5)-tool/1.41,height+(width/2/3)-tool/1.41,4)
+		shape.lineTo((-width/2/1.5),height+(width/2/3))
+
+		shape.lineTo((-width/2/1.5)-((thickness-chamfer)/1.41),height+(width/2/3)+((thickness-chamfer)/1.41))
+		shape.lineTo((-width/2/1.5)-((thickness)/1.41)+chamfer/1.41,height+(width/2/3)+((thickness)/1.41)+chamfer/1.41)
+
+		shape.lineTo((-width/2/3)-((thickness)/1.41)-chamfer/1.41,height+(width/2/1.5)+((thickness)/1.41)-chamfer/1.41)
+		shape.lineTo((-width/2/3)-((thickness)/1.41)+chamfer/1.41,height+(width/2/1.5)+((thickness)/1.41)-chamfer/1.41)
+
+		shape.lineTo((-width/2/3),height+(width/2/1.5))
+		dogbone(shape,(-width/2/3)+tool/1.41,height+(width/2/1.5)+tool/1.41,4)
+		shape.lineTo(0,height+width/2)	//top
+		dogbone(shape,(width/2/3)-tool/1.41,height+(width/2/1.5)+tool/1.41,5)
+
+		shape.lineTo((width/2/3)+((thickness)/1.41)-chamfer/1.41,height+(width/2/1.5)+((thickness)/1.41)-chamfer/1.41)
+		shape.lineTo((width/2/3)+((thickness)/1.41)+chamfer/1.41,height+(width/2/1.5)+((thickness)/1.41)-chamfer/1.41)
+
+		shape.lineTo((width/2/1.5)+((thickness-chamfer)/1.41),height+(width/2/3)+((thickness+chamfer)/1.41))
+		shape.lineTo((width/2/1.5)+((thickness)/1.41)-chamfer/1.41,height+(width/2/3)+((thickness)/1.41)-chamfer/1.41)
+
+		dogbone(shape,(width/2/1.5)+tool/1.41,height+(width/2/3)-tool/1.41,5)
+		shape.lineTo(width/2,height)
+		shape.lineTo(width/2,height/1.5+chamfer)
+		shape.lineTo(width/2-chamfer,height/1.5)
+		dogbone(shape,width/2-thickness,height/1.5-tool,-1)
+		dogbone(shape,width/2-thickness,height/3+tool,-1)
+		shape.lineTo(width/2-thickness,height/3)
+		
+		shape.lineTo(width/2-chamfer,height/3)
+		shape.lineTo(width/2,height/3-chamfer)
+		shape.lineTo(width/2,0)
+
+		shape.lineTo((width/2-width/3)+chamfer,0)
+		shape.lineTo(width/2-width/3,chamfer)
+
+		dogbone(shape,width/2-width/3-tool,thickness,0)
+		dogbone(shape,-width/2+width/3+tool,thickness,0) 
+
+		shape.lineTo(-width/2+width/3,chamfer)
+		shape.lineTo((-width/2+width/3)-chamfer,0)
+		shape.lineTo(-width/2,0)
+
+		if(partName=="front"){
+			hole = new THREE.Shape()
+			radius=birdhouse.hole/2*10
+			cX = 0
+			cY = height*0.75
+			hole.moveTo((cX)+Math.sin((Math.PI*2)/30)*radius,(cY)+Math.cos((Math.PI*2)/30)*radius)
+			for(i=30;i>0;i--){
+				hole.lineTo((cX)+Math.sin((Math.PI*2)/30*i)*radius,(cY)+Math.cos((Math.PI*2)/30*i)*radius)
+			}
+			shape.holes.push(hole)
+			//
+
+			hole = new THREE.Shape()
+
+			radius=1.25		
+			cX = 0
+			cY = height*0.75-20
+
+			hole.moveTo((cX)+Math.sin((Math.PI*2)/10)*radius,(cY)+Math.cos((Math.PI*2)/10)*radius)
+			for(i=10;i>0;i--){
+				hole.lineTo((cX)+Math.sin((Math.PI*2)/10*i)*radius,(cY)+Math.cos((Math.PI*2)/10*i)*radius)
+			}
+			shape.holes.push(hole)
+		}
+
+		extrude = new THREE.ExtrudeGeometry(shape, extrudeSettings)
+		geometry = new THREE.EdgesGeometry(extrude,40)
+
+		if(partName=="front"){
+			frontWF = new THREE.LineSegments(geometry,lineMaterial)
+			front = new THREE.Mesh( extrude, materials )
+
+			translate(frontWF,0,0,birdhouse.depth/2*10-thickness)
+			translate(front,0,0,birdhouse.depth/2*10-thickness)
+
+			scene.add(frontWF)
+			scene.add(front)
+
+			extrude = new THREE.CylinderGeometry( 1.1, 1.1, 20, 16 );
+			geometry = new THREE.EdgesGeometry(extrude,40)
+			cylinderWF = new THREE.LineSegments(geometry,lineMaterial)
+			cylinder = new THREE.Mesh( extrude, material3 )
+
+			rotateX(cylinderWF,Math.PI/2)
+			translate(cylinderWF,0,height*0.75-20,birdhouse.depth/2*10+10)
+			rotateX(cylinder,Math.PI/2)
+			translate(cylinder,0,height*0.75-20,birdhouse.depth/2*10+10)		
+
+			scene.add( cylinderWF );
+			scene.add( cylinder );
+
+
+		}
+		else{
+			backWF = new THREE.LineSegments(geometry,lineMaterial)
+			back = new THREE.Mesh( extrude, materials )
+
+			translate(backWF,0,0,-birdhouse.depth/2*10)
+			translate(back,0,0,-birdhouse.depth/2*10)
+
+			scene.add(backWF)
+			scene.add(back)
+		}
+
+	
+	}
+	else if(partName=="left"){
+
+		shape = new THREE.Shape()
+
+		shape.moveTo(-width/2+thickness,0)
+		dogbone(shape,-width/2+thickness,height/3-tool,1)
+		shape.lineTo(-width/2,height/3)
+		shape.lineTo(-width/2,height/1.5)
+		dogbone(shape,-width/2+thickness,height/1.5+tool,1)
+		shape.lineTo(-width/2+thickness,height)
+		shape.lineTo(width/2-thickness,height)
+		dogbone(shape,width/2-thickness,height/1.5+tool,-1)
+		shape.lineTo(width/2,height/1.5)
+		shape.lineTo(width/2,height/3)
+		dogbone(shape,width/2-thickness,height/3-tool,-1)
+		shape.lineTo(width/2-thickness,0)
+		shape.lineTo(width/2-width/3,0)
+		shape.lineTo(width/2-width/3,thickness)
+		dogbone(shape,width/2-width/3-tool,thickness,0)
+		dogbone(shape,-width/2+width/3+tool,thickness,0)
+		shape.lineTo(-width/2+width/3,thickness)
+		shape.lineTo(-width/2+width/3,0)
+		shape.lineTo(-width/2+thickness,0)
+		extrude = new THREE.ExtrudeGeometry(shape, extrudeSettings)
+		geometry = new THREE.EdgesGeometry(extrude,40)
+		leftWF = new THREE.LineSegments(geometry,lineMaterial)
+		left = new THREE.Mesh( extrude, materials )
+		rotateY(leftWF,Math.PI/2)
+		rotateY(left,Math.PI/2)
+		translate(leftWF,birdhouse.width/2*10-thickness,0,0)
+		translate(left,birdhouse.width/2*10-thickness,0,0)
+
+		scene.add(leftWF)
+		scene.add(left)
+
+		extrude = new THREE.ExtrudeGeometry(shape, extrudeSettings)
+		geometry = new THREE.EdgesGeometry(extrude,40)
+
+		rightWF = new THREE.LineSegments(geometry,lineMaterial)
+		right = new THREE.Mesh( extrude, materials )
+
+		rotateY(rightWF,Math.PI/2)
+		rotateY(right,Math.PI/2)
+		translate(rightWF,-birdhouse.width/2*10,0,0)
+		translate(right,-birdhouse.width/2*10,0,0)
+
+		scene.add(rightWF)
+		scene.add(right)
+
+	}
+	else if(partName=="bottom"){
+		shape = new THREE.Shape()
+
+		shape.moveTo(-width/2+thickness,0)
+
+		dogbone(shape,-width/2+thickness,height/3-thickness-tool,1)
+		shape.lineTo(-width/2,height/3-thickness)
+		shape.lineTo(-width/2,height/1.5-thickness)
+		dogbone(shape,-width/2+thickness,height/1.5-thickness+tool,1)
+		shape.lineTo(-width/2+thickness,height-thickness*2)
+		dogbone(shape,-width/2+width/3-tool,height-thickness*2,2)
+		shape.lineTo(-width/2+width/3,height-thickness)
+		shape.lineTo(width/2-width/3,height-thickness)
+		dogbone(shape,width/2-width/3+tool,height-thickness*2,2)
+		shape.lineTo(width/2-thickness,height-thickness*2)
+		dogbone(shape,width/2-thickness,height/1.5-thickness+tool,-1)
+		shape.lineTo(width/2-thickness,height/1.5-thickness)
+		shape.lineTo(width/2,height/1.5-thickness)
+		shape.lineTo(width/2,height/3-thickness)
+		shape.lineTo(width/2-thickness,height/3-thickness)
+		dogbone(shape,width/2-thickness,height/3-thickness-tool,-1)
+		shape.lineTo(width/2-thickness,0)
+		dogbone(shape,width/2-width/3+tool,0,3)
+		shape.lineTo(width/2-width/3,-thickness) 
+		shape.lineTo(-width/2+width/3,-thickness)
+		dogbone(shape,-width/2+width/3-tool,0,3)
+		shape.lineTo(-width/2+thickness,0)
+		extrude = new THREE.ExtrudeGeometry(shape, extrudeSettings)
+		geometry = new THREE.EdgesGeometry(extrude,40)
+		bottomWF = new THREE.LineSegments(geometry,lineMaterial)
+		bottom = new THREE.Mesh( extrude, materials )
+		rotateX(bottomWF,-Math.PI/2)
+		rotateX(bottom,-Math.PI/2)
+		translate(bottomWF,0,0,birdhouse.depth/2*10-thickness)
+		translate(bottom,0,0,birdhouse.depth/2*10-thickness)
+
+		scene.add(bottomWF)
+		scene.add(bottom)
+
+	}
+	else if(partName=="top"){
+
+
+		shape = new THREE.Shape()
+
+		shape.moveTo(0,0)
+
+		dogbone(shape,0,height/3-tool,1)
+		//shape.lineTo(-thickness,height/3)
+		shape.lineTo(-thickness+chamfer,height/3)
+		shape.lineTo(-thickness,(height/3)+chamfer)
+
+		shape.lineTo(-thickness,(height/1.5)-chamfer)
+		shape.lineTo(-thickness+chamfer,height/1.5)
+
+		dogbone(shape,0,height/1.5+tool,1)
+		shape.lineTo(0,height)
+		shape.lineTo(width/2/3*1.41,height)
+		dogbone(shape,width/2/3*1.41+tool,height-thickness,2)
+		dogbone(shape,width/2/1.5*1.41-tool,height-thickness,2)
+		shape.lineTo(width/2/1.5*1.41,height)
+		shape.lineTo(width/2*1.41-chamfer2,height)
+		shape.lineTo(width/2*1.41,height-chamfer2)
+		shape.lineTo(width/2*1.41,chamfer2)
+		shape.lineTo(width/2*1.41-chamfer2,0)
+		shape.lineTo(width/2/1.5*1.41,0)
+		dogbone(shape,width/2/1.5*1.41-tool,thickness,3)
+		dogbone(shape,width/2/3*1.41+tool,thickness,3)
+		shape.lineTo(width/2/3*1.41,0)
+		shape.lineTo(0,0)
+		extrude = new THREE.ExtrudeGeometry(shape, extrudeSettings)
+		geometry = new THREE.EdgesGeometry(extrude,40)
+		toprWF = new THREE.LineSegments(geometry,lineMaterial)
+		topr = new THREE.Mesh( extrude, materials )
+
+		rotateX(toprWF,-Math.PI/2)
+		rotateX(topr,-Math.PI/2)
+		translate(toprWF,0,0,birdhouse.depth/2*10)
+		translate(topr,0,0,birdhouse.depth/2*10)
+		rotateZ(toprWF,-Math.PI/4)
+		rotateZ(topr,-Math.PI/4)
+		translate(toprWF,0,(birdhouse.height*10)+(width/2),0)
+		translate(topr,0,(birdhouse.height*10)+(width/2),0)
+
+		scene.add(toprWF)
+		scene.add(topr)
+
+		shape = new THREE.Shape()
+
+		shape.moveTo(0,chamfer2)
+		shape.lineTo(0,height-chamfer2)
+		shape.lineTo(chamfer2,height)	
+		shape.lineTo(width/2/3*1.41-chamfer,height)
+		shape.lineTo(width/2/3*1.41,height-chamfer)
+		dogbone(shape,width/2/3*1.41+tool,height-thickness,2)
+		dogbone(shape,width/2/1.5*1.41-tool,height-thickness,2)
+		shape.lineTo(width/2/1.5*1.41,height)
+		shape.lineTo(width/2*1.41+thickness,height)
+
+		shape.lineTo(width/2*1.41+thickness,(height/1.5)+chamfer)
+		shape.lineTo(width/2*1.41+thickness-chamfer,height/1.5)
+
+
+		shape.lineTo(width/2*1.41,height/1.5)
+		dogbone(shape,width/2*1.41,height/1.5-tool,-1)
+		dogbone(shape,width/2*1.41,height/3+tool,-1)
+		shape.lineTo(width/2*1.41,height/3)
+
+		shape.lineTo(width/2*1.41+thickness-chamfer,height/3)
+		shape.lineTo(width/2*1.41+thickness,(height/3)-chamfer)
+
+		shape.lineTo(width/2*1.41+thickness,0)
+		shape.lineTo(width/2/1.5*1.41,0)
+		dogbone(shape,width/2/1.5*1.41-tool,thickness,3)
+		dogbone(shape,width/2/3*1.41+tool,thickness,3)
+		shape.lineTo(width/2/3*1.41,0)
+		shape.lineTo(chamfer2,0)
+		shape.lineTo(0,chamfer2)
+		extrude = new THREE.ExtrudeGeometry(shape, extrudeSettings)
+		geometry = new THREE.EdgesGeometry(extrude,40)
+
+		toplWF = new THREE.LineSegments(geometry,lineMaterial)
+		topl = new THREE.Mesh( extrude, materials )
+
+		rotateX(toplWF,-Math.PI/2)
+		rotateX(topl,-Math.PI/2)
+		translate(toplWF,-birdhouse.width*10/1.41,0,birdhouse.depth/2*10,0)
+		translate(topl,-birdhouse.width*10/1.41,0,birdhouse.depth/2*10,0)
+		rotateZ(toplWF,Math.PI/4)
+		rotateZ(topl,Math.PI/4)
+		translate(toplWF,0,birdhouse.height*10+width/2,0)
+		translate(topl,0,birdhouse.height*10+width/2,0)
+
+		scene.add(toplWF)
+		scene.add(topl)
+
+	}
+
+}
+
+
+function dogbone(s,cX,cY,side){
+
+	radius = tool
+
+	if(side==-1){
+		for(i=0;i<=10;i++){
+			s.lineTo((cX)+Math.sin((-Math.PI)/10*i)*radius,(cY)+Math.cos((-Math.PI)/10*i)*radius)
+		}
+	}
+	else if(side==1){
+		
+		for(i=10;i>=0;i--){
+			s.lineTo((cX)+Math.sin((Math.PI)/10*i)*radius,(cY)+Math.cos((Math.PI)/10*i)*radius)
+		}
+		
+	}
+	else if(side==0){
+		
+		for(i=5;i>=-5;i--){
+			s.lineTo((cX)+Math.sin((Math.PI)/10*i)*radius,(cY)+Math.cos((Math.PI)/10*i)*radius)
+		}
+		
+	}
+	else if(side==2){
+		
+		for(i=10;i>=0;i--){
+			s.lineTo((cX)+Math.sin(((Math.PI)/10*i)+Math.PI/2)*radius,(cY)+Math.cos(((Math.PI)/10*i)+Math.PI/2)*radius)
+		}
+		
+	}
+	else if(side==3){
+		
+		for(i=10;i>=0;i--){
+			s.lineTo((cX)+Math.sin(((Math.PI)/10*i)-Math.PI/2)*radius,(cY)+Math.cos(((Math.PI)/10*i)-Math.PI/2)*radius)
+		}
+		
+	}
+	else if(side==4){
+		for(i=10;i>=0;i--){
+			s.lineTo((cX)+Math.sin(((Math.PI)/10*i)+Math.PI/4)*radius,(cY)+Math.cos(((Math.PI)/10*i)+Math.PI/4)*radius)
+		}
+		
+	}
+	else if(side==5){
+		for(i=0;i<=10;i++){
+			s.lineTo((cX)+Math.sin(((-Math.PI)/10*i)-Math.PI/4)*radius,(cY)+Math.cos(((-Math.PI)/10*i)-Math.PI/4)*radius)
+		}
+		
+	}
+	
+	
+
+
+}
+
+
+function dims(){
+
+	canvas = document.createElement('canvas');
+	context = canvas.getContext('2d');
+
+  	canvas.width = 1024;
+   canvas.height = 512;
+
+	context.textAlign = "center";
+	context.textBaseline = "middle";
+ 
+	context.font = '200px Arial';
+
+	context.fillStyle = '#555';
+	context.fillText("48\"", canvas.width/2, canvas.height/2);
+
+	tex = new THREE.Texture(canvas) 
+
+	tex.needsUpdate = true;
+
+	materialA = new THREE.SpriteMaterial( { map: tex } );
+	sprite2 = new THREE.Sprite( materialA );
+
+
+	sprite2.scale.set(100,50)
+
+	scene.add(sprite2)
+
+
+
+}
+
+function scale(s){
+
+	for(i=0;i<scene.children.length;i++){
+
+		if(scene.children[i].type!="Sprite"){
+
+			scene.children[i].scale.set(s,s,s)
+
+		}
+
+	}
+
+
+	//sprite2.scale.set(2,2,2)
+
+}
+
+updateAll()
+render()
+
+
+
+$("body").on('mousewheel',function(e){
+	
+	sf+=(e.deltaY/10)
+
+	if(sf<0.1){
+		sf=0.1
+	}
+	scale(sf)
+
+
+})
+
+
+
+
+		</script>
+	</body>
+</html>
