@@ -47,11 +47,11 @@ BIRDHOUSE<br>
 &emsp;depth<br>
 &emsp;&emsp;<input id='depth' type="number" value="0"  step="0.125" autocomplete="off"/><br>
 &emsp;height<br>
-&emsp;&emsp;<input id='height' type="number" value="0"  step="0.125" autocomplete="off"/><br>
+&emsp;&emsp;<input id='height' type="number" value="0"  step="0.0625" autocomplete="off"/><br>
 &emsp;hole &empty;<br>
 &emsp;&emsp;<input id='hole' type="number" value="0"  step="0.05" autocomplete="off"/><p>
  
-&emsp;&emsp;<input id='explode' type="submit" value="explode" onclick="explode()"/><br>
+&emsp;<input id='explode' type="submit" value="explode" onclick="explode()"/><br>
  
 
 
@@ -195,7 +195,10 @@ $("#thickness").on('change click',function(){
 
 $("#width").on('change click',function(){
 	birdhouse.width = $(this).val()
-	
+
+	//birdhouse.height
+	//console.log(birdhouse.height+($(this).val()/2))
+	//$("#height").val(birdhouse.height+($(this).val()/2))
 	updateAll()
 })
 
@@ -206,8 +209,7 @@ $("#depth").on('change click',function(){
 })
 
 $("#height").on('change click',function(){
-	birdhouse.height = $(this).val()
-	
+	birdhouse.height = $(this).val()-($("#width").val()/2)
 	updateAll()
 })
 
@@ -432,6 +434,8 @@ function updateAll(){
 
 	//console.log(pts)	
 
+	
+
 	outline = new THREE.Line(pts, lineMaterial2)
 	outline.geometry.applyMatrix( new THREE.Matrix4().makeRotationX(Math.PI/2 ) )
 	translate(outline,0,-0.5,0)
@@ -457,6 +461,7 @@ function updateAll(){
 	pts4.vertices.push(new THREE.Vector3(0,480,0))
 	zAxis = new THREE.Line(pts4, lineMaterial5)
 	scene.add(zAxis)
+
 
 	//CSG
 	/*
@@ -506,12 +511,12 @@ function updateAll(){
 	*/
 	
 
-	console.log(birdhouse)
+	//console.log(birdhouse)
 
 	$("#thickness").val(birdhouse.material)
 	$("#width").val(birdhouse.width)
 	$("#depth").val(birdhouse.depth)
-	$("#height").val(birdhouse.height)
+	$("#height").val(birdhouse.height+(birdhouse.width/2))
 	$("#hole").val(birdhouse.hole)
 
 	makePart(birdhouse.width,birdhouse.height,'front')
@@ -597,7 +602,7 @@ function makePart(width,height,partName){
 			hole = new THREE.Shape()
 			radius=birdhouse.hole/2*10
 			cX = 0
-			cY = height*0.75
+			cY = height
 			hole.moveTo((cX)+Math.sin((Math.PI*2)/30)*radius,(cY)+Math.cos((Math.PI*2)/30)*radius)
 			for(i=30;i>0;i--){
 				hole.lineTo((cX)+Math.sin((Math.PI*2)/30*i)*radius,(cY)+Math.cos((Math.PI*2)/30*i)*radius)
@@ -609,7 +614,7 @@ function makePart(width,height,partName){
 
 			radius=1.25		
 			cX = 0
-			cY = height*0.75-20
+			cY = height-20
 
 			hole.moveTo((cX)+Math.sin((Math.PI*2)/10)*radius,(cY)+Math.cos((Math.PI*2)/10)*radius)
 			for(i=10;i>0;i--){
@@ -637,9 +642,9 @@ function makePart(width,height,partName){
 			cylinder = new THREE.Mesh( extrude, material3 )
 
 			rotateX(cylinderWF,Math.PI/2)
-			translate(cylinderWF,0,height*0.75-20,birdhouse.depth/2*10+10)
+			translate(cylinderWF,0,height-20,birdhouse.depth/2*10+10)
 			rotateX(cylinder,Math.PI/2)
-			translate(cylinder,0,height*0.75-20,birdhouse.depth/2*10+10)		
+			translate(cylinder,0,height-20,birdhouse.depth/2*10+10)		
 
 			scene.add( cylinderWF );
 			scene.add( cylinder );
