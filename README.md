@@ -1,5 +1,5 @@
 #BIRDHOUSE
 
 [DEMO](http://gofabmo.org/fabmo-birdhouse-app)  
-[FabMo App](https://github.com/FabMo/fabmo-birdhouse-app/blob/master/fabmo-birdhouse-app.fma)  
+[Download FabMo App](https://github.com/FabMo/fabmo-birdhouse-app/raw/master/fabmo-birdhouse-app.fma)  
 
