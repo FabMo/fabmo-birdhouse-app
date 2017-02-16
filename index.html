@@ -47,7 +47,11 @@ input{
 </style>
 </head>
 
-<body onResize="window.location=window.location;">
+<body>
+
+<!--
+	onResize="window.location=window.location;"
+-->
 
 <script src="js/libs/jquery-3.1.1.min.js"></script>
 <script src="js/libs/jquery.mousewheel.min.js"></script>
@@ -63,6 +67,10 @@ input{
 <div id="parameters" style="top:10px;left:10px">
 BIRDHOUSE<p>
 
+&emsp;<select id="bird" autocomplete="off">
+	<option selected disabled>select bird</option>
+</select><p>
+
 &emsp;material<br>
 &emsp;&emsp;<input id='thickness' type="number" value="0" step="0.001" autocomplete="off"/><br> 
 &emsp;width<br>
@@ -72,9 +80,12 @@ BIRDHOUSE<p>
 &emsp;height<br>
 &emsp;&emsp;<input id='height' type="number" value="0"  step="0.0625" autocomplete="off"/><br>
 &emsp;hole &empty;<br>
-&emsp;&emsp;<input id='hole' type="number" value="0"  step="0.05" autocomplete="off"/><br>
+&emsp;&emsp;<input id='hole' type="number" value="0"  step="0.005" autocomplete="off"/><br>
 &emsp;dowel &empty;<br>
-&emsp;&emsp;<input id='dowel' type="number" value="0"  step="0.001" autocomplete="off"/><p>
+&emsp;&emsp;<input id='dowel' type="number" value="0"  step="0.001" autocomplete="off"/><br>
+&emsp;install height<br>
+&emsp;&emsp;<input id='install-height' type="text" value="6-10'" readonly/ autocomplete="off"><p>
+
 &emsp;&emsp;2D<input id='2D' type="checkbox" onclick="draw()" autocomplete="off"/><p>
 &emsp;<input id='explode' class="button" type="submit" value="explode" onclick="explode()"/><p>
 
@@ -550,6 +561,7 @@ function updateAll(){
 	$("#height").val(birdhouse.height+(birdhouse.width/2))
 	$("#hole").val(birdhouse.hole)
 	$("#dowel").val(birdhouse.dowel)
+	$("#install-height").val(birdhouse.install)
 	
 	polygons=[]
 
@@ -647,7 +659,7 @@ function makePart(width,height,partName){
 			hole = new THREE.Shape()
 			radius=birdhouse.hole/2*10
 			cX = 0
-			cY = height
+			cY = birdhouse.holeHeight*10
 			hole.moveTo((cX)+Math.sin((Math.PI*2)/30)*radius,(cY)+Math.cos((Math.PI*2)/30)*radius)
 			for(i=30;i>0;i--){
 				hole.lineTo((cX)+Math.sin((Math.PI*2)/30*i)*radius,(cY)+Math.cos((Math.PI*2)/30*i)*radius)
@@ -658,7 +670,7 @@ function makePart(width,height,partName){
 
 			radius=(birdhouse.dowel/2)*10		
 			cX = 0
-			cY = height-20
+			cY = (birdhouse.holeHeight*10)/2
 
 			hole.moveTo((cX)+Math.sin((Math.PI*2)/10)*radius,(cY)+Math.cos((Math.PI*2)/10)*radius)
 			for(i=10;i>0;i--){
@@ -688,9 +700,9 @@ function makePart(width,height,partName){
 			cylinder = new THREE.Mesh( extrude, material3 )
 
 			rotateX(cylinderWF,Math.PI/2)
-			translate(cylinderWF,0,height-20,birdhouse.depth/2*10+10)
+			translate(cylinderWF,0,(birdhouse.holeHeight*10)/2,birdhouse.depth/2*10+10)
 			rotateX(cylinder,Math.PI/2)
-			translate(cylinder,0,height-20,birdhouse.depth/2*10+10)		
+			translate(cylinder,0,(birdhouse.holeHeight*10)/2,birdhouse.depth/2*10+10)		
 
 			scene.add( cylinderWF );
 			scene.add( cylinder );
@@ -1035,11 +1047,33 @@ $("body").on('mousewheel',function(e){
 
 })
 
-
-
 var fabmo = new FabMoDashboard()
 
+loadBirds()
 
+function loadBirds(){
+
+	//console.log(birds)
+
+	for(i=0;i<birds.length;i++){
+		$('#bird').append("<option value=\""+birds[i].value+"\">"+birds[i].name+"</option>")
+	}
+
+
+}
+
+$("#bird").on('change',function(){
+
+	for(i=0;i<birds.length;i++){
+		if($("#bird").val()==birds[i].value){
+			birdhouse=birds[i]
+		}
+	}
+
+	//console.log(birdhouse)	
+
+	updateAll()
+})
 
 
 
