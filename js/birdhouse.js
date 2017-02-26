@@ -4,7 +4,7 @@ var birdhouse={
 	width: 5,
 	depth: 5,
 	height: 4,
-	hole: 1.2,
+	hole: 1.25,
 	holeHeight:4,
 	dowel:0.25,
 	material: 0.38,
@@ -58,7 +58,7 @@ var birds = [
 	hole: 2,
 	holeHeight:8,
 	dowel:0.25,
-	material: 0.38,
+	material: 0.5,
 	install: "10 - 20\'"	
 	},
 	{
@@ -70,7 +70,7 @@ var birds = [
 	hole: 2.5,
 	holeHeight:14,
 	dowel:0.25,
-	material: 0.38,
+	material: 0.5,
 	install: "6 - 20\'"	
 	},
 	{

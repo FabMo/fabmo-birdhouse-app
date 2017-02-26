@@ -25,7 +25,7 @@ function draw(){
 
 	sf2 = 2.5
 
-	ctx.translate(50*sf2,ctx.canvas.height-50)
+	ctx.translate(50*sf2,ctx.canvas.height-20)
 
 	
 	for(i=0;i<polygons.length;i++){
@@ -55,7 +55,12 @@ function draw(){
 			}
 		}
 
-		if(i==3){
+		
+
+		if(i==2){
+			ctx.translate(60*sf2,0)
+		}
+		else if(i==3){
 			ctx.translate(40*sf2,0)
 		}
 		else if(i>3){

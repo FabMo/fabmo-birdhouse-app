@@ -47,10 +47,21 @@ function make(){
 	for(i=0;i<offset.length;i++){
 
 
-		sbp="MS,0.5,0.25\n"
-		sbp+="JZ,0.25\n"
-		sbp+="SO,1,1\n"
-		sbp+="PAUSE 3\n"
+		if(document.getElementById('output').value=='sbp'){
+			sbp="MS,0.5,0.25\n"
+			sbp+="JZ,0.25\n"
+			sbp+="SO,1,1\n"
+			sbp+="PAUSE 3\n"
+		}
+		else if(document.getElementById('output').value=='gcode'){
+			sbp="g20"
+			sbp+="g0z0.25\n"
+			sbp+="m3\n"
+			sbp+="g4p3\n"
+		}
+		else if(document.getElementById('output').value=='dxf'){
+			dxf = "0\nSECTION\n2\nENTITIES\n999\nw4rd.com\n0\n"
+		}
 
 		yOffset = 0
 		if((i<2)||(i==2)){
@@ -74,27 +85,73 @@ function make(){
 
 		for(j=offset[i].length-1;j>=0;j--){
 
-			sbp+="J2," + (xOffset+(offset[i][j][0].X/10)).toFixed(3) + "," + (yOffset+(offset[i][j][0].Y/10)).toFixed(3) + "\n"
+			if(document.getElementById('output').value=='sbp'){
 
-			for(p=1;p<=pt;p++){
-				if(p==pt){
-					sbp+="MZ,-"+cutDepth+"\n"
+				sbp+="J2," + (xOffset+(offset[i][j][0].X/10)).toFixed(3) + "," + (yOffset+(offset[i][j][0].Y/10)).toFixed(3) + "\n"
+
+				for(p=1;p<=pt;p++){
+					if(p==pt){
+						sbp+="MZ,-"+cutDepth+"\n"
+					}
+					else{
+						sbp+="MZ,-" + (p*pd).toFixed(3) + "\n"
+					}
+					for(k=0;k<offset[i][j].length;k++){
+						sbp+="M2," + (xOffset+(offset[i][j][k].X/10)).toFixed(3) + "," + (yOffset+(offset[i][j][k].Y/10)).toFixed(3) + "\n"
+					}
+					sbp+="M2," + (xOffset+(offset[i][j][0].X/10)).toFixed(3) + "," + (yOffset+(offset[i][j][0].Y/10)).toFixed(3) + "\n"
 				}
-				else{
-					sbp+="MZ,-" + (p*pd).toFixed(3) + "\n"
-				}
-				for(k=0;k<offset[i][j].length;k++){
-					sbp+="M2," + (xOffset+(offset[i][j][k].X/10)).toFixed(3) + "," + (yOffset+(offset[i][j][k].Y/10)).toFixed(3) + "\n"
-				}
-				sbp+="M2," + (xOffset+(offset[i][j][0].X/10)).toFixed(3) + "," + (yOffset+(offset[i][j][0].Y/10)).toFixed(3) + "\n"
+				sbp+="JZ,0.125\n"
 			}
-			sbp+="JZ,0.125\n"
-			
+			else if(document.getElementById('output').value=='gcode'){
+				sbp+="g0x" + (xOffset+(offset[i][j][0].X/10)).toFixed(3) + "y" + (yOffset+(offset[i][j][0].Y/10)).toFixed(3) + "\n"
+
+				for(p=1;p<=pt;p++){
+					if(p==pt){
+						sbp+="g1z-"+cutDepth+"f15\n"
+					}
+					else{
+						sbp+="g1z-" + (p*pd).toFixed(3) + "f15\n"
+					}
+					for(k=0;k<offset[i][j].length;k++){
+						sbp+="g1x" + (xOffset+(offset[i][j][k].X/10)).toFixed(3) + "y" + (yOffset+(offset[i][j][k].Y/10)).toFixed(3) + "f30\n"
+					}
+					sbp+="g1x" + (xOffset+(offset[i][j][0].X/10)).toFixed(3) + "y" + (yOffset+(offset[i][j][0].Y/10)).toFixed(3) + "f30\n"
+				}
+				sbp+="g0z0.125\n"
+
+			}
+			else{
+				dxf+="POLYLINE\n8\n0\n70\n1\n0\n"
+
+				dxf+="VERTEX\n8\n0\n10\n"
+				dxf+= (xOffset+(offset[i][j][0].X/10)).toFixed(3) + "\n20\n"
+				dxf+= (yOffset+(offset[i][j][0].Y/10)).toFixed(3) + "\n0\n"
+
+				for(k=0;k<offset[i][j].length;k++){
+					dxf+="VERTEX\n8\n0\n10\n"
+					dxf+= (xOffset+(offset[i][j][k].X/10)).toFixed(3) + "\n20\n"
+					dxf+= (yOffset+(offset[i][j][k].Y/10)).toFixed(3) + "\n0\n"
+				}
+
+				dxf+="VERTEX\n8\n0\n10\n"
+				dxf+= (xOffset+(offset[i][j][0].X/10)).toFixed(3) + "\n20\n"
+				dxf+= (yOffset+(offset[i][j][0].Y/10)).toFixed(3) + "\n0\n"
+
+				dxf+="SEQEND\n0\n"
+			}			
 		}
 
-	sbp+="JZ,0.25\n"
-	sbp+="SO,1,0\n"
-	sbp+="J2,0,0\n"	
+	if(document.getElementById('output').value=='sbp'){
+		sbp+="JZ,0.25\n"
+		sbp+="SO,1,0\n"
+		sbp+="J2,0,0\n"	
+	}
+	else if(document.getElementById('output').value=='gcode'){
+		sbp+="g0z0.25\n"
+		sbp+="m5\n"
+		sbp+="g0x0y0\n"
+	}
 
 	if(i==0){
 		partName='birdhouseFront'
@@ -114,13 +171,36 @@ function make(){
 	else if(i==5){
 		partName='birdhouseTopRight'
 	}
+
+	if(document.getElementById('output').value=='sbp'){
+		ext = '.SBP'
+	}
+	else if(document.getElementById('output').value=='gcode'){
+		ext = '.nc'
+	}
 	
-	fabmo.submitJob({
-		file : sbp,
-		filename : partName + '.SBP',
-		name : partName,
-		description :  '1/8\"endmill'
-	})
+
+	if(document.getElementById('output').value!='dxf'){
+
+		fabmo.submitJob({
+			file : sbp,
+			filename : partName + ext,
+			name : partName,
+			description :  '1/8\"endmill'
+		})
+
+	}
+	else{
+
+		dxf+="ENDSEC\n0\nEOF"
+
+		var link = document.getElementById("downloadLink")
+
+		link.setAttribute("href", "data:text/plain;base64," + btoa(dxf))
+		link.setAttribute("download", partName + ".dxf")
+		link.click()
+
+	}
 	
 	}
 

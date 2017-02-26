@@ -21,6 +21,9 @@ input{
 	position:absolute;
 }
 
+input[type="checkbox"] {
+	transform:scale(1.5, 1.5);
+}
 
 .button{
 	width:83px;
@@ -36,15 +39,28 @@ input{
 
 #makeDiv{
 	position:absolute;
-	bottom:0px;
+	top:10px;
 	right:10px;
 }
 
 #make{
-	height:80px;
+	position:absolute;
+	bottom:0px;
+	right:10px;
+}
+
+#explode{
+	height:40px;
+}
+
+
+#code{
+
 }
 
 </style>
+
+
 </head>
 
 <body>
@@ -78,23 +94,42 @@ BIRDHOUSE<p>
 &emsp;depth<br>
 &emsp;&emsp;<input id='depth' type="number" value="0"  step="0.125" autocomplete="off"/><br>
 &emsp;height<br>
-&emsp;&emsp;<input id='height' type="number" value="0"  step="0.0625" autocomplete="off"/><br>
+&emsp;&emsp;<input id='height' type="number" value="0" step="0.125" autocomplete="off"/><br>
 &emsp;hole &empty;<br>
-&emsp;&emsp;<input id='hole' type="number" value="0"  step="0.005" autocomplete="off"/><br>
+&emsp;&emsp;<input id='hole' type="number" value="0"  step="0.03125" autocomplete="off"/><br>
+&emsp;hole height<br>
+&emsp;&emsp;<input id='hole-height' type="number" value="0"  step="0.125" autocomplete="off"/><br>
 &emsp;dowel &empty;<br>
 &emsp;&emsp;<input id='dowel' type="number" value="0"  step="0.001" autocomplete="off"/><br>
+&emsp;clearance<br>
+&emsp;&emsp;<input id='clearance' type="number" min="0" value="0.004"  step="0.001" autocomplete="off"/><br>
 &emsp;install height<br>
 &emsp;&emsp;<input id='install-height' type="text" value="6-10'" readonly/ autocomplete="off"><p>
 
-&emsp;&emsp;2D<input id='2D' type="checkbox" onclick="draw()" autocomplete="off"/><p>
-&emsp;<input id='explode' class="button" type="submit" value="explode" onclick="explode()"/><p>
+</div>
 
+<div id='makeDiv'>
+
+<input id='explode' class="button" type="submit" value="explode" onclick="explode()"/><p>
+2D<input id='2D' type="checkbox" onclick="draw()" autocomplete="off"/><p>
+
+endmill:<br>
+<select id="tool" autocomplete="on">
+	<option value="0.125" selected>1/8"</option>
+	<option value="0.25">1/4"</option>
+</select><p>
+
+<select id="output" autocomplete="on">
+	<option value="dxf">DXF</option>
+	<option value="gcode">G-code</option>
+	<option value="sbp" selected>SBP</option>
+</select><p>
 
 </div>
 
-
-<div id='makeDiv'>
-<input id='make' class="button" type="submit" value="make" onclick="make()"/><p>
+<div id='make'>
+	<a href="#" id="downloadLink"></a>
+	<input class="button" type="submit" value="make" style="height:80px;" onclick="make()"/><p>
 </div>
 
 <canvas id="myCanvas"></canvas>
@@ -229,10 +264,17 @@ var chamfer = 0.5
 var chamfer2 = 2.5
 var polygons = []
 var offset = []
+var height 
+
+var clearance = 0.02
+
+$("#tool").on('change click',function(){
+	tool = ($(this).val()/2)*10
+	updateAll()
+})
 
 $("#thickness").on('change click',function(){
 	birdhouse.material = $(this).val()
-	
 	updateAll()
 })
 
@@ -244,26 +286,36 @@ $("#width").on('change click',function(){
 
 $("#depth").on('change click',function(){
 	birdhouse.depth = $(this).val()
-	
 	updateAll()
 })
 
-$("#height").on('change click',function(){
-	birdhouse.height = $(this).val()-($("#width").val()/2)
+$("#height").on('change click',function(e){
+	birdhouse.height = $(this).val()
 	updateAll()
 })
 
 
 $("#hole").on('change click',function(){
 	birdhouse.hole = $(this).val()
-	
+	updateAll()
+})
+
+
+$("#hole-height").on('change click',function(){
+	birdhouse.holeHeight = $(this).val()
+	updateAll()
+})
+
+
+$("#clearance").on('change click',function(){
+	clearance = parseFloat(($(this).val()/2*10).toFixed(3))
+	console.log(clearance)
 	updateAll()
 })
 
 
 $("#dowel").on('change click',function(){
 	birdhouse.dowel = $(this).val()
-	
 	updateAll()
 })
 
@@ -438,8 +490,6 @@ function updateAll(){
 	//outline
 	pts = new THREE.Geometry()
 
-	
-
 	//grid 48 x 48 x 1"
 	l=48/2*10
 	w=48/2*10
@@ -553,15 +603,19 @@ function updateAll(){
 	*/
 	
 
-	//console.log(birdhouse)
+	//height = (parseFloat(((birdhouse.height)+(birdhouse.width/2)+(birdhouse.material*1.41)).toFixed(3)))
+
+	//console.log(height)
 
 	$("#thickness").val(birdhouse.material)
 	$("#width").val(birdhouse.width)
 	$("#depth").val(birdhouse.depth)
-	$("#height").val(birdhouse.height+(birdhouse.width/2))
+	$("#height").val(birdhouse.height)
 	$("#hole").val(birdhouse.hole)
+	$("#hole-height").val(birdhouse.holeHeight)
 	$("#dowel").val(birdhouse.dowel)
 	$("#install-height").val(birdhouse.install)
+	//$("#clearance").val(parseFloat((clearance/10*2).toFixed(3)))
 	
 	polygons=[]
 
@@ -615,13 +669,15 @@ function makePart(width,height,partName){
 		shape = new THREE.Shape()
 
 		shape.moveTo(-width/2,0)
-		shape.lineTo(-width/2,height/3-chamfer)
-		shape.lineTo(-width/2+chamfer,height/3)
-		dogbone(shape,-width/2+thickness,height/3+tool,1)
-		dogbone(shape,-width/2+thickness,height/1.5-tool,1)
-		shape.lineTo(-width/2+thickness,height/1.5)
-		shape.lineTo(-width/2+chamfer,height/1.5)
-		shape.lineTo(-width/2,height/1.5+chamfer)
+
+		shape.lineTo(-width/2,height/3-clearance-chamfer)
+		shape.lineTo(-width/2+chamfer,height/3-clearance)
+		dogbone(shape,-width/2+thickness,(height/3-clearance)+tool,1)
+		dogbone(shape,-width/2+thickness,height/1.5+clearance-tool,1)
+		shape.lineTo(-width/2+thickness,height/1.5+clearance)
+		shape.lineTo(-width/2+chamfer,height/1.5+clearance)
+		shape.lineTo(-width/2,height/1.5+chamfer+clearance)
+
 		shape.lineTo(-width/2,height)
 		dogbone(shape,(-width/2/1.5)-tool/1.41,height+(width/2/3)-tool/1.41,4)
 		shape.lineTo((-width/2/1.5),height+(width/2/3))
@@ -639,20 +695,22 @@ function makePart(width,height,partName){
 		shape.lineTo((width/2/1.5)+((thickness)/1.41)-chamfer/1.41,height+(width/2/3)+((thickness)/1.41)-chamfer/1.41)
 		dogbone(shape,(width/2/1.5)+tool/1.41,height+(width/2/3)-tool/1.41,5)
 		shape.lineTo(width/2,height)
-		shape.lineTo(width/2,height/1.5+chamfer)
-		shape.lineTo(width/2-chamfer,height/1.5)
-		dogbone(shape,width/2-thickness,height/1.5-tool,-1)
-		dogbone(shape,width/2-thickness,height/3+tool,-1)
-		shape.lineTo(width/2-thickness,height/3)	
-		shape.lineTo(width/2-chamfer,height/3)
-		shape.lineTo(width/2,height/3-chamfer)
+
+		shape.lineTo(width/2,height/1.5+chamfer+clearance)
+		shape.lineTo(width/2-chamfer,height/1.5+clearance)
+		dogbone(shape,width/2-thickness,height/1.5-tool+clearance,-1)
+		dogbone(shape,width/2-thickness,height/3+tool-clearance,-1)
+		shape.lineTo(width/2-thickness,height/3-clearance)	
+		shape.lineTo(width/2-chamfer,height/3-clearance)
+		shape.lineTo(width/2,height/3-chamfer-clearance)
+
 		shape.lineTo(width/2,0)
-		shape.lineTo((width/2-width/3)+chamfer,0)
-		shape.lineTo(width/2-width/3,chamfer)
-		dogbone(shape,width/2-width/3-tool,thickness,0)
-		dogbone(shape,-width/2+width/3+tool,thickness,0) 
-		shape.lineTo(-width/2+width/3,chamfer)
-		shape.lineTo((-width/2+width/3)-chamfer,0)
+		shape.lineTo((width/2-width/3)+chamfer+clearance,0)
+		shape.lineTo(width/2-width/3+clearance,chamfer)
+		dogbone(shape,width/2-width/3-tool+clearance,thickness,0)
+		dogbone(shape,-width/2+width/3+tool-clearance,thickness,0) 
+		shape.lineTo(-width/2+width/3-clearance,chamfer)
+		shape.lineTo((-width/2+width/3)-chamfer-clearance,0)
 		shape.lineTo(-width/2,0)
 
 		if(partName=="front"){
@@ -726,6 +784,7 @@ function makePart(width,height,partName){
 		shape = new THREE.Shape()
 
 		shape.moveTo(-width/2+thickness,0)
+
 		dogbone(shape,-width/2+thickness,height/3-tool,1)
 		shape.lineTo(-width/2+chamfer,height/3)
 		shape.lineTo(-width/2,height/3+chamfer)
@@ -741,12 +800,15 @@ function makePart(width,height,partName){
 		shape.lineTo(width/2-chamfer,height/3)
 		dogbone(shape,width/2-thickness,height/3-tool,-1)
 		shape.lineTo(width/2-thickness,0)
-		shape.lineTo(width/2-width/3+chamfer,0)
-		shape.lineTo(width/2-width/3,chamfer)
-		dogbone(shape,width/2-width/3-tool,thickness,0)
-		dogbone(shape,-width/2+width/3+tool,thickness,0)
-		shape.lineTo(-width/2+width/3,chamfer)
-		shape.lineTo(-width/2+width/3-chamfer,0)
+
+		shape.lineTo(width/2-width/3+chamfer+clearance,0)
+		shape.lineTo(width/2-width/3+clearance,chamfer)
+		dogbone(shape,width/2-width/3-tool+clearance,thickness,0)
+		dogbone(shape,-width/2+width/3+tool-clearance,thickness,0)
+		shape.lineTo(-width/2+width/3-clearance,chamfer)
+		shape.lineTo(-width/2+width/3-chamfer-clearance,0)
+
+
 		shape.lineTo(-width/2+thickness,0)
 
 		extrude = new THREE.ExtrudeGeometry(shape, extrudeSettings)
@@ -839,22 +901,26 @@ function makePart(width,height,partName){
 		shape.lineTo(-thickness+chamfer,height/1.5)
 		dogbone(shape,0,height/1.5+tool,1)
 		shape.lineTo(0,height)
-		shape.lineTo((width/2/3*1.41)-chamfer,height)
-		shape.lineTo(width/2/3*1.41,height-chamfer)
-		dogbone(shape,width/2/3*1.41+tool,height-thickness,2)
-		dogbone(shape,width/2/1.5*1.41-tool,height-thickness,2)
-		shape.lineTo(width/2/1.5*1.41,height-chamfer)
-		shape.lineTo((width/2/1.5*1.41)+chamfer,height)
+
+		shape.lineTo((width/2/3*1.41)-chamfer-clearance,height)
+		shape.lineTo(width/2/3*1.41-clearance,height-chamfer)
+		dogbone(shape,width/2/3*1.41+tool-clearance,height-thickness,2)
+		dogbone(shape,width/2/1.5*1.41-tool+clearance,height-thickness,2)
+		shape.lineTo(width/2/1.5*1.41+clearance,height-chamfer)
+		shape.lineTo((width/2/1.5*1.41)+chamfer+clearance,height)
+
 		shape.lineTo(width/2*1.41-chamfer2,height)
 		shape.lineTo(width/2*1.41,height-chamfer2)
 		shape.lineTo(width/2*1.41,chamfer2)
 		shape.lineTo(width/2*1.41-chamfer2,0)
-		shape.lineTo((width/2/1.5*1.41)+chamfer,0)
-		shape.lineTo(width/2/1.5*1.41,chamfer)
-		dogbone(shape,width/2/1.5*1.41-tool,thickness,3)
-		dogbone(shape,width/2/3*1.41+tool,thickness,3)
-		shape.lineTo(width/2/3*1.41,chamfer)
-		shape.lineTo((width/2/3*1.41)-chamfer,0)
+
+		shape.lineTo((width/2/1.5*1.41)+chamfer+clearance,0)
+		shape.lineTo(width/2/1.5*1.41+clearance,chamfer)
+		dogbone(shape,width/2/1.5*1.41-tool+clearance,thickness,3)
+		dogbone(shape,width/2/3*1.41+tool-clearance,thickness,3)
+		shape.lineTo(width/2/3*1.41-clearance,chamfer)
+		shape.lineTo((width/2/3*1.41)-chamfer-clearance,0)
+
 		shape.lineTo(0,0)
 
 		makePG(shape)
@@ -882,28 +948,34 @@ function makePart(width,height,partName){
 		shape.moveTo(0,chamfer2)
 		shape.lineTo(0,height-chamfer2)
 		shape.lineTo(chamfer2,height)	
-		shape.lineTo(width/2/3*1.41-chamfer,height)
-		shape.lineTo(width/2/3*1.41,height-chamfer)
-		dogbone(shape,width/2/3*1.41+tool,height-thickness,2)
-		dogbone(shape,width/2/1.5*1.41-tool,height-thickness,2)
-		shape.lineTo(width/2/1.5*1.41,height-chamfer)
-		shape.lineTo((width/2/1.5*1.41)+chamfer,height)
+
+		shape.lineTo((width/2/3*1.41)-chamfer-clearance,height)
+		shape.lineTo(width/2/3*1.41-clearance,height-chamfer)
+		dogbone(shape,width/2/3*1.41+tool-clearance,height-thickness,2)
+		dogbone(shape,width/2/1.5*1.41-tool+clearance,height-thickness,2)
+		shape.lineTo(width/2/1.5*1.41+clearance,height-chamfer)
+		shape.lineTo((width/2/1.5*1.41)+chamfer+clearance,height)
+
 		shape.lineTo(width/2*1.41+thickness,height)
-		shape.lineTo(width/2*1.41+thickness,(height/1.5)+chamfer)
-		shape.lineTo(width/2*1.41+thickness-chamfer,height/1.5)
-		shape.lineTo(width/2*1.41,height/1.5)
-		dogbone(shape,width/2*1.41,height/1.5-tool,-1)
-		dogbone(shape,width/2*1.41,height/3+tool,-1)
-		shape.lineTo(width/2*1.41,height/3)
-		shape.lineTo(width/2*1.41+thickness-chamfer,height/3)
-		shape.lineTo(width/2*1.41+thickness,(height/3)-chamfer)
+
+		shape.lineTo(width/2*1.41+thickness,(height/1.5)+chamfer+clearance)
+		shape.lineTo(width/2*1.41+thickness-chamfer,height/1.5+clearance)
+		shape.lineTo(width/2*1.41,height/1.5+clearance)
+		dogbone(shape,width/2*1.41,height/1.5-tool+clearance,-1)
+		dogbone(shape,width/2*1.41,height/3+tool-clearance,-1)
+		shape.lineTo(width/2*1.41,height/3-clearance)
+		shape.lineTo(width/2*1.41+thickness-chamfer,height/3-clearance)
+		shape.lineTo(width/2*1.41+thickness,(height/3)-chamfer-clearance)
+
 		shape.lineTo(width/2*1.41+thickness,0)
-		shape.lineTo((width/2/1.5*1.41)+chamfer,0)
-		shape.lineTo(width/2/1.5*1.41,chamfer)
-		dogbone(shape,width/2/1.5*1.41-tool,thickness,3)
-		dogbone(shape,width/2/3*1.41+tool,thickness,3)
-		shape.lineTo(width/2/3*1.41,chamfer)
-		shape.lineTo((width/2/3*1.41)-chamfer,0)
+
+		shape.lineTo((width/2/1.5*1.41)+chamfer+clearance,0)
+		shape.lineTo(width/2/1.5*1.41+clearance,chamfer)
+		dogbone(shape,width/2/1.5*1.41-tool+clearance,thickness,3)
+		dogbone(shape,width/2/3*1.41+tool-clearance,thickness,3)
+		shape.lineTo(width/2/3*1.41-clearance,chamfer)
+		shape.lineTo((width/2/3*1.41)-chamfer-clearance,0)
+
 		shape.lineTo(chamfer2,0)
 		shape.lineTo(0,chamfer2)
 
