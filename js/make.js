@@ -54,7 +54,7 @@ function make(){
 			sbp+="PAUSE 3\n"
 		}
 		else if(document.getElementById('output').value=='gcode'){
-			sbp="g20"
+			sbp="g20\n"
 			sbp+="g0z0.25\n"
 			sbp+="m3\n"
 			sbp+="g4p3\n"
@@ -96,7 +96,7 @@ function make(){
 					else{
 						sbp+="MZ,-" + (p*pd).toFixed(3) + "\n"
 					}
-					for(k=0;k<offset[i][j].length;k++){
+					for(k=1;k<offset[i][j].length;k++){
 						sbp+="M2," + (xOffset+(offset[i][j][k].X/10)).toFixed(3) + "," + (yOffset+(offset[i][j][k].Y/10)).toFixed(3) + "\n"
 					}
 					sbp+="M2," + (xOffset+(offset[i][j][0].X/10)).toFixed(3) + "," + (yOffset+(offset[i][j][0].Y/10)).toFixed(3) + "\n"
@@ -113,10 +113,15 @@ function make(){
 					else{
 						sbp+="g1z-" + (p*pd).toFixed(3) + "f15\n"
 					}
-					for(k=0;k<offset[i][j].length;k++){
-						sbp+="g1x" + (xOffset+(offset[i][j][k].X/10)).toFixed(3) + "y" + (yOffset+(offset[i][j][k].Y/10)).toFixed(3) + "f30\n"
+					for(k=1;k<offset[i][j].length;k++){
+						if(k==1){
+							sbp+="g1x" + (xOffset+(offset[i][j][k].X/10)).toFixed(3) + "y" + (yOffset+(offset[i][j][k].Y/10)).toFixed(3) + "f30\n"
+						}
+						else{
+							sbp+="g1x" + (xOffset+(offset[i][j][k].X/10)).toFixed(3) + "y" + (yOffset+(offset[i][j][k].Y/10)).toFixed(3) + "\n"
+						}
 					}
-					sbp+="g1x" + (xOffset+(offset[i][j][0].X/10)).toFixed(3) + "y" + (yOffset+(offset[i][j][0].Y/10)).toFixed(3) + "f30\n"
+					sbp+="g1x" + (xOffset+(offset[i][j][0].X/10)).toFixed(3) + "y" + (yOffset+(offset[i][j][0].Y/10)).toFixed(3) + "\n"
 				}
 				sbp+="g0z0.125\n"
 

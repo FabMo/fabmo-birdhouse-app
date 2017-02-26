@@ -18,8 +18,7 @@ function draw(){
 
 	ctx.strokeStyle="#000"
 
-
-	ctx.fillStyle="#d3b89e"
+	ctx.fillStyle="rgba(210,185,160,0.8)"
 
 	ctx.lineWidth=1	
 
