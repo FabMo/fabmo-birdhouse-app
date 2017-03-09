@@ -13,7 +13,6 @@ function make(){
 		if(polygons[i].holes.length>0){
 			for(j=0;j<polygons[i].holes.length;j++){
 				offset.push(polygons[i].holes[j])
-
 			}
 		}
 	
@@ -47,10 +46,16 @@ function make(){
 	for(i=0;i<offset.length;i++){
 
 
-		if(document.getElementById('output').value=='sbp'){
+		if(document.getElementById('output').value=='sbp_hb'){
 			sbp="MS,0.5,0.25\n"
 			sbp+="JZ,0.25\n"
 			sbp+="SO,1,1\n"
+			sbp+="PAUSE 3\n"
+		}
+		else if(document.getElementById('output').value=='sbp_sb'){
+			sbp="C6\n"
+			sbp+="MS,0.5,0.25\n"
+			sbp+="JZ,0.25\n"
 			sbp+="PAUSE 3\n"
 		}
 		else if(document.getElementById('output').value=='gcode'){
@@ -85,7 +90,7 @@ function make(){
 
 		for(j=offset[i].length-1;j>=0;j--){
 
-			if(document.getElementById('output').value=='sbp'){
+			if((document.getElementById('output').value=='sbp_hb')||(document.getElementById('output').value=='sbp_sb')){
 
 				sbp+="J2," + (xOffset+(offset[i][j][0].X/10)).toFixed(3) + "," + (yOffset+(offset[i][j][0].Y/10)).toFixed(3) + "\n"
 
@@ -147,10 +152,15 @@ function make(){
 			}			
 		}
 
-	if(document.getElementById('output').value=='sbp'){
+	if(document.getElementById('output').value=='sbp_hb'){
 		sbp+="JZ,0.25\n"
 		sbp+="SO,1,0\n"
 		sbp+="J2,0,0\n"	
+	}
+	else if(document.getElementById('output').value=='sbp_sb'){
+		sbp+="JZ,0.25\n"
+		sbp+="C7\n"
+		sbp+="J2,0,0\n"
 	}
 	else if(document.getElementById('output').value=='gcode'){
 		sbp+="g0z0.25\n"
@@ -177,7 +187,7 @@ function make(){
 		partName='birdhouseTopRight'
 	}
 
-	if(document.getElementById('output').value=='sbp'){
+	if(document.getElementById('output').value.substring(0,3) == 'sbp'){
 		ext = '.SBP'
 	}
 	else if(document.getElementById('output').value=='gcode'){
