@@ -262,7 +262,7 @@ var sf = 5
 var dir = true
 var tool = 0.625 //radius
 var chamfer = 0.5
-var chamfer2 = 2.5
+var chamfer2 = 0
 var polygons = []
 var offset = []
 var height 
@@ -617,6 +617,8 @@ function updateAll(){
 	$("#dowel").val(birdhouse.dowel)
 	$("#install-height").val(birdhouse.install)
 	//$("#clearance").val(parseFloat((clearance/10*2).toFixed(3)))
+	
+	chamfer2 = birdhouse.material/2*10
 	
 	polygons=[]
 
