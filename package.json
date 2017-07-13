@@ -1,10 +1,13 @@
 {
-	"name":"BIRDHOUSE",
-	"main":"./index.html",
-	"icon":"icon.png",
-	"icon_color":"white",
-	"version":"0.1.0",
-	"author":"Jonathan Ward",
-	"website":"http://fabmo.github.io/fabmo-birdhouse-app",
-	"description":"birdhouse app"
+	"name": "BIRDHOUSE",
+	"main": "./index.html",
+	"icon": "icon.png",
+	"icon_color": "white",
+	"version": "0.1.0",
+	"author": "Jonathan Ward",
+	"website": "http://fabmo.github.io/fabmo-birdhouse-app",
+	"description": "birdhouse app",
+	"dependencies": {
+		"grunt": "^1.0.1"
+	}
 }
