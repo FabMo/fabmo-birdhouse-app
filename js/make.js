@@ -47,12 +47,13 @@ function make(){
 		dxf = "0\nSECTION\n2\nENTITIES\n999\nw4rd.com\n0\n"
 
 		space=0
+		xOffset = birdhouse.width/2
 
 		for(i=0;i<polygons.length;i++){
 
 		yOffset = 0
 
-		if((i<2)){
+		if((i==1)){
 			xOffset = birdhouse.width/2
 			space+=parseFloat(birdhouse.width)
 		}
@@ -74,17 +75,24 @@ function make(){
 			space+= ((parseFloat(birdhouse.width)/2)*1.41)+thickness/10
 		}
 		
-		space+=1
+
+		if(i>0){
+			space+=1
+		}
+
 
 		xOffset += space
+
+		
 
 		if(polygons[i].holes.length>0){
 
 			for(j=0;j<polygons[i].holes.length;j++){
 
+				dxf+="POLYLINE\n8\n0\n70\n1\n0\n"
+
 				for(k=0;k<polygons[i].holes[j].length;k++){
 
-					dxf+="POLYLINE\n8\n0\n70\n1\n0\n"
 					dxf+="VERTEX\n8\n0\n10\n"
 					dxf+= (xOffset+(polygons[i].holes[j][k].X/10)).toFixed(3) + "\n20\n"
 					dxf+= (yOffset+(polygons[i].holes[j][k].Y/10)).toFixed(3) + "\n0\n"

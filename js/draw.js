@@ -54,22 +54,25 @@ function draw(){
 			}
 		}
 
-		
 
-		if(i==2){
-			ctx.translate(60*sf2,0)
+
+		if((i==1)||(i==2)){
+			//console.log(birdhouse.depth)
+			ctx.translate(((birdhouse.width/2)+(birdhouse.depth/2)+1)*10*sf2,0)
+			//ctx.translate(1*10*,0)
 		}
 		else if(i==3){
-			ctx.translate(40*sf2,0)
+			ctx.translate((((birdhouse.width)/2)+1)*10*sf2+(thickness*sf2),0)
 		}
-		else if(i>3){
-			ctx.translate(50*sf2,0)
+		else if(i==4){
+			ctx.translate((((birdhouse.width)/2)*10*1.41*sf2)+(1*10*sf2),0)
 		}
 		else{
-			ctx.translate(60*sf2,0)
+			ctx.translate((parseFloat(birdhouse.width)+1)*10*sf2,0)
 		}
 
 	}
+
 
 	ctx.fill()
 	ctx.stroke()
@@ -103,7 +106,7 @@ function draw(){
 		}
 	}
 
-	ctx.stroke()
+	//ctx.stroke()
 
 
 	}
