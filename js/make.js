@@ -99,9 +99,9 @@ function make(){
 
 				}
 
-				dxf+="VERTEX\n8\n0\n10\n"
-				dxf+= (xOffset+(polygons[i].holes[j][0].X/10)).toFixed(3) + "\n20\n"
-				dxf+= (yOffset+(polygons[i].holes[j][0].Y/10)).toFixed(3) + "\n0\n"
+				//dxf+="VERTEX\n8\n0\n10\n"
+				//dxf+= (xOffset+(polygons[i].holes[j][0].X/10)).toFixed(3) + "\n20\n"
+				//dxf+= (yOffset+(polygons[i].holes[j][0].Y/10)).toFixed(3) + "\n0\n"
 
 				dxf+="SEQEND\n0\n"
 
@@ -117,9 +117,9 @@ function make(){
 			dxf+= (yOffset+(polygons[i].curves[j].Y/10)).toFixed(3) + "\n0\n"
 		}
 
-		dxf+="VERTEX\n8\n0\n10\n"
-		dxf+= (xOffset+(polygons[i].curves[0].X/10)).toFixed(3) + "\n20\n"
-		dxf+= (yOffset+(polygons[i].curves[0].Y/10)).toFixed(3) + "\n0\n"
+		//dxf+="VERTEX\n8\n0\n10\n"
+		//dxf+= (xOffset+(polygons[i].curves[0].X/10)).toFixed(3) + "\n20\n"
+		//dxf+= (yOffset+(polygons[i].curves[0].Y/10)).toFixed(3) + "\n0\n"
 
 		dxf+="SEQEND\n0\n"
 
